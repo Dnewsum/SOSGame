@@ -9,10 +9,16 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+
 
 import java.util.*;
 
 public class GeneralSoS {
+    protected BufferedWriter moveWriter;
     protected String[][] grid;
     protected Button[][] buttons; // 2D array to store buttons
     protected Label player1ScoreLabel;
@@ -62,6 +68,16 @@ public class GeneralSoS {
         player2ScoreLabel = new Label("Player 2 (Red) Score: 0");
         setupRadioButtons();
 
+        String timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+        String filename = "game_record_" + timestamp + ".txt";
+        try {
+            moveWriter = new BufferedWriter(new FileWriter(filename));
+            moveWriter.write("BoardSize " + grid.length);
+            moveWriter.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         for (int i = 0; i < boardSize; i++) {
             for (int j = 0; j < boardSize; j++) {
                 Button cellButton = createCellButton(i, j);
@@ -75,6 +91,18 @@ public class GeneralSoS {
         }
     }
 
+    protected void writeMoveToFile(int playerNumber, String symbol, int row, int col) {
+        try {
+            if (moveWriter != null) {
+                moveWriter.write(playerNumber + " " + symbol + " " + row + " " + col);
+                moveWriter.newLine();
+                moveWriter.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     protected Button createCellButton(int row, int col) {
         Button cellButton = new Button();
         cellButton.setMinSize(50, 50);
@@ -85,6 +113,7 @@ public class GeneralSoS {
 
     // Method to handle cell click events
     protected void clickCell(Button cellButton, int row, int col) {
+
         if ((isPlayer1Turn && isPlayer1Computer) || (!isPlayer1Turn && isPlayer2Computer)) {
             return;
         }
@@ -95,6 +124,9 @@ public class GeneralSoS {
                 grid[row][col] = currentSymbol;
                 cellButton.setText(currentSymbol);
                 boolean sosFormed = checkForSOS(row, col);
+                grid[row][col] = currentSymbol;
+                cellButton.setText(currentSymbol);
+                writeMoveToFile(isPlayer1Turn ? 1 : 2, currentSymbol, row, col);
 
                 if (sosFormed) {
                     updateScore();
@@ -232,6 +264,14 @@ public class GeneralSoS {
     protected void declareWinner() {
         Platform.runLater(() -> {
             String winner;
+            if (moveWriter != null) {
+                try {
+                    moveWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
             if (player1Score > player2Score) {
                 winner = "Player 1 (Blue) wins!";
 
@@ -281,14 +321,17 @@ public class GeneralSoS {
                     for (int j = 0; j < grid.length; j++) {
                         if (grid[i][j] == null) {
                             emptyCells.add(new int[]{i, j});
+
                         }
                     }
                 }
+
 
                 Random rand = new Random();
                 int[] cell = emptyCells.get(rand.nextInt(emptyCells.size()));
                 int row = cell[0];
                 int col = cell[1];
+
 
                 String[] symbols = {"S", "O"};
                 String symbol = symbols[rand.nextInt(symbols.length)];
@@ -308,6 +351,9 @@ public class GeneralSoS {
                     // If the computer formed an SOS, it gets another turn
                     if ((isPlayer1Turn && isPlayer1Computer) || (!isPlayer1Turn && isPlayer2Computer)) {
                         makeComputerMove();
+                        grid[row][col] = symbol;
+                        cellButton.setText(symbol);
+                        writeMoveToFile(isPlayer1Turn ? 1 : 2, symbol, row, col);
                     } else {
                         setBoardDisabled(false); // Enable the board for human player
                     }

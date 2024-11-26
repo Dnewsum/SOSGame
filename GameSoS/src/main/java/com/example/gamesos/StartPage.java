@@ -5,14 +5,23 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.*;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+
+import java.io.File;
 
 // Makes the start page for selecting game options
 public class StartPage extends Application {
@@ -26,19 +35,41 @@ public class StartPage extends Application {
     private Button startGameButton;
     private Stage primaryStage;
     private Scene startScene;
+    private Button playBackButton;
 
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
+        HBox titleBox = createTitleWithImage();
         Text title = createTitleText();
         GridPane optionsGrid = createOptionsGrid();
         VBox layout = new VBox(20);
         layout.setAlignment(Pos.CENTER);
-        layout.getChildren().addAll(title, optionsGrid);
+        layout.getChildren().addAll(titleBox, optionsGrid);
         startScene = new Scene(layout, 500, 600);
         primaryStage.setTitle("SOS Game Setup");
         primaryStage.setScene(startScene);
         primaryStage.show();
+
+    }
+    GridPane optionsGrid = createOptionsGrid();
+    private HBox createTitleWithImage() {
+        // Create title text
+        Text title = createTitleText();
+
+        // Load the image
+        Image logoImage = new Image("file:C:\\Users\\Computatron5000\\IdeaProjects\\SOS Backup\\GameSoS\\src\\main\\resources\\logo.PNG"); // Adjust the path as needed
+        ImageView logoImageView = new ImageView(logoImage);
+        logoImageView.setFitWidth(90);  // Set width
+        logoImageView.setFitHeight(90); // Set height
+        logoImageView.setPreserveRatio(true);
+
+        // Place the title and image in an HBox
+        HBox titleBox = new HBox(50); // Add some spacing between the title and image
+        titleBox.setAlignment(Pos.CENTER);
+        titleBox.getChildren().addAll(logoImageView, title);
+
+        return titleBox;
     }
 
     // For a cool title, you have to tell it a lot, and that is what this is
@@ -47,7 +78,7 @@ public class StartPage extends Application {
         title.setFont(Font.font("Arial", FontWeight.BOLD, 48));
         title.setFill(new LinearGradient(
                 0, 0, 1, 0, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.DARKBLUE), new Stop(1, Color.LIGHTBLUE)
+                new Stop(0, Color.DARKRED), new Stop(1, Color.LIGHTGOLDENRODYELLOW)
         ));
 
         // Apply a drop shadow under the words to look better.
@@ -57,6 +88,7 @@ public class StartPage extends Application {
         title.setEffect(dropShadow);
         return title;
     }
+
 
     // Makes the gameboard and area.
     private GridPane createOptionsGrid() {
@@ -97,9 +129,14 @@ public class StartPage extends Application {
         player2ComputerButton.setToggleGroup(player2Group);
         player2HumanButton.setSelected(true); // Default to Human
 
-        startGameButton = new Button("Start Game");
-        startGameButton.setOnAction(e -> startGame());
+        startGameButton = new Button("Start New Game");
+        playBackButton = new Button("Play Back Game");
 
+        startGameButton.setOnAction(e -> startGame());
+        playBackButton.setOnAction(e -> playBackGame());
+
+
+        grid.add(playBackButton, 1, 8);
         grid.add(gridSizeLabel, 0, 0);
         grid.add(gridSizeComboBox, 1, 0);
         grid.add(gameTypeLabel, 0, 1);
@@ -142,6 +179,7 @@ public class StartPage extends Application {
     private void launchGameScene(GeneralSoS game) {
         VBox gameLayout = new VBox(10);
         gameLayout.setAlignment(Pos.CENTER);
+
         gameLayout.getChildren().addAll(
                 game.getGameBoard(),
                 game.getRadioButtons(),
@@ -169,4 +207,19 @@ public class StartPage extends Application {
     public static void main(String[] args) {
         launch(args);
     }
+    private void playBackGame() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open Recorded Game File");
+        File file = fileChooser.showOpenDialog(primaryStage);
+        if (file != null) {
+            // Start playback
+            PlayBackSoS playbackGame = new PlayBackSoS(file);
+            playbackGame.setPrimaryStage(primaryStage);
+            playbackGame.setStartPage(this);
+            playbackGame.simpleSetup(6, false, false); // Board size will be read from the file
+            launchGameScene(playbackGame);
+        }
+    }
+
+
 }
